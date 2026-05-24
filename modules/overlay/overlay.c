@@ -89,22 +89,15 @@ void zcsr_overlay_set_buttons(zcsr_overlay* o, const zcsr_button* b, int c) {
 #if defined(__linux__)
 #include <X11/Xlib.h>
 
-static void zcsr_overlay_draw_x11(zcsr_overlay* o, Window window) {
-    Display* display = XOpenDisplay(0);
+static void zcsr_overlay_draw_x11(zcsr_overlay* o, Display* display, Window window) {
     XWindowAttributes attrs;
     GC gc;
 
     if (!display) return;
-    if (!XGetWindowAttributes(display, window, &attrs)) {
-        XCloseDisplay(display);
-        return;
-    }
+    if (!XGetWindowAttributes(display, window, &attrs)) return;
 
     gc = XCreateGC(display, window, 0, 0);
-    if (!gc) {
-        XCloseDisplay(display);
-        return;
-    }
+    if (!gc) return;
 
     XSetForeground(display, gc, 0x202020u);
     XFillRectangle(display, window, gc, 0, 0, (unsigned int)attrs.width, (unsigned int)attrs.height);
@@ -138,7 +131,6 @@ static void zcsr_overlay_draw_x11(zcsr_overlay* o, Window window) {
 
     XFlush(display);
     XFreeGC(display, gc);
-    XCloseDisplay(display);
 }
 
 #elif defined(_WIN32)
@@ -197,7 +189,8 @@ void zcsr_overlay_render(zcsr_overlay* o) {
     handle = zcsr_surface_native_handle(o->surface);
     if (!handle) return;
 #if defined(__linux__)
-    zcsr_overlay_draw_x11(o, (Window)(uintptr_t)handle);
+    void* display = zcsr_surface_native_display(o->surface);
+    zcsr_overlay_draw_x11(o, (Display*)display, (Window)(uintptr_t)handle);
 #elif defined(_WIN32)
     zcsr_overlay_draw_win32(o, (HWND)handle);
 #else
