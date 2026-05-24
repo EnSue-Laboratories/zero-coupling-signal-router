@@ -33,6 +33,8 @@ if(UNIX AND NOT APPLE)
   target_include_directories(zcsr_platform PRIVATE ${X11_INCLUDE_DIR})
   target_link_libraries(zcsr_overlay PUBLIC ${X11_LIBRARIES})
   target_include_directories(zcsr_overlay PRIVATE ${X11_INCLUDE_DIR})
+  target_link_libraries(zcsr_input PUBLIC ${X11_LIBRARIES})  # input pumps X11 key/close events
+  target_include_directories(zcsr_input PRIVATE ${X11_INCLUDE_DIR})
 endif()
 
 # --- Agent 6: Integration & Validation (architecture/review owned) ---
@@ -71,6 +73,10 @@ add_test(NAME integration COMMAND test_integration)
 add_executable(test_gamelogic tests/test_gamelogic.c)
 target_link_libraries(test_gamelogic PRIVATE zcsr_gamelogic)
 add_test(NAME gamelogic COMMAND test_gamelogic)
+
+add_executable(test_input tests/test_input.c)
+target_link_libraries(test_input PRIVATE zcsr_input zcsr_platform)  # input uses platform accessors
+add_test(NAME input COMMAND test_input)
 
 # --- Zero-coupling guard: fail if a module includes another module ---
 add_custom_target(check_coupling
