@@ -35,6 +35,8 @@ if(UNIX AND NOT APPLE)
   target_include_directories(zcsr_overlay PRIVATE ${X11_INCLUDE_DIR})
   target_link_libraries(zcsr_input PUBLIC ${X11_LIBRARIES})  # input pumps X11 key/close events
   target_include_directories(zcsr_input PRIVATE ${X11_INCLUDE_DIR})
+  target_link_libraries(zcsr_render PUBLIC ${X11_LIBRARIES})
+  target_include_directories(zcsr_render PRIVATE ${X11_INCLUDE_DIR})
 endif()
 
 # --- Agent 6: Integration & Validation (architecture/review owned) ---
