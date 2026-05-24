@@ -86,8 +86,12 @@ static void zcsr_input_record_key(zcsr_input* input, zcsr_keycode key, zcsr_key_
 uint64_t zcsr_clock_now_ns(void) {
     LARGE_INTEGER freq;
     LARGE_INTEGER counter;
+    uint64_t f;
+    uint64_t c;
     if (!QueryPerformanceFrequency(&freq) || !QueryPerformanceCounter(&counter) || freq.QuadPart <= 0) return 0;
-    return (uint64_t)(((unsigned long long)counter.QuadPart * 1000000000ull) / (unsigned long long)freq.QuadPart);
+    f = (uint64_t)freq.QuadPart;
+    c = (uint64_t)counter.QuadPart;
+    return (c / f) * 1000000000ull + ((c % f) * 1000000000ull) / f;
 }
 
 static zcsr_keycode zcsr_map_key(WPARAM vk) {
