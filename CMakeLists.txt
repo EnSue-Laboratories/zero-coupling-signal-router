@@ -68,6 +68,10 @@ add_executable(test_integration tests/test_integration.c)
 target_link_libraries(test_integration PRIVATE zcsr_overlay zcsr_hsm zcsr_core zcsr_signal zcsr_platform)
 add_test(NAME integration COMMAND test_integration)
 
+add_executable(test_gamelogic tests/test_gamelogic.c)
+target_link_libraries(test_gamelogic PRIVATE zcsr_gamelogic)
+add_test(NAME gamelogic COMMAND test_gamelogic)
+
 # --- Zero-coupling guard: fail if a module includes another module ---
 add_custom_target(check_coupling
   COMMAND ${CMAKE_SOURCE_DIR}/tools/check_no_cross_includes.sh
