@@ -61,6 +61,10 @@ static char* zcsr_state_store_string(zcsr_state* s, const char* text) {
     return dst;
 }
 
+static void zcsr_copy_string(char* dst, const char* src, size_t bytes) {
+    for (size_t i = 0; i < bytes; ++i) dst[i] = src[i];
+}
+
 static zcsr_state_entry* zcsr_state_find(zcsr_state* s, const char* key) {
     if (!s || !key) return 0;
     for (size_t i = 0; i < s->count; ++i) {
@@ -99,6 +103,7 @@ void* zcsr_arena_alloc(zcsr_arena* a, size_t bytes, size_t align) {
     aligned_ptr = zcsr_align_up_ptr((uintptr_t)(a->data + a->used), align);
     if (aligned_ptr < (uintptr_t)a->data) return 0;
     offset = (size_t)(aligned_ptr - (uintptr_t)a->data);
+    if (offset > a->capacity) return 0;
     if (bytes > a->capacity - offset) return 0;
     a->used = offset + bytes;
     return (void*)aligned_ptr;
@@ -168,23 +173,43 @@ bool zcsr_state_has(const zcsr_state* s, const char* key) {
 bool zcsr_state_set(zcsr_state* s, const char* key, zcsr_value v) {
     zcsr_state_entry* entry;
     zcsr_value stored = v;
+    size_t checkpoint;
 
     if (!s || !key || v.type == ZCSR_NONE) return false;
-    if (v.type == ZCSR_STR) {
-        stored.s = zcsr_state_store_string(s, v.s ? v.s : "");
-        if (!stored.s) return false;
-    }
 
     entry = zcsr_state_find(s, key);
     if (entry) {
+        if (v.type == ZCSR_STR) {
+            const char* text = v.s ? v.s : "";
+            size_t bytes = zcsr_strlen(text) + 1u;
+            if (entry->value.type == ZCSR_STR && entry->value.s && bytes <= zcsr_strlen(entry->value.s) + 1u) {
+                zcsr_copy_string((char*)entry->value.s, text, bytes);
+                stored.s = entry->value.s;
+            } else {
+                stored.s = zcsr_state_store_string(s, text);
+                if (!stored.s) return false;
+            }
+        }
         entry->value = stored;
         return true;
     }
 
     if (s->count >= s->capacity) return false;
+    checkpoint = s->strings_used;
     entry = &s->entries[s->count];
     entry->key = zcsr_state_store_string(s, key);
-    if (!entry->key) return false;
+    if (!entry->key) {
+        s->strings_used = checkpoint;
+        return false;
+    }
+    if (v.type == ZCSR_STR) {
+        stored.s = zcsr_state_store_string(s, v.s ? v.s : "");
+        if (!stored.s) {
+            entry->key = 0;
+            s->strings_used = checkpoint;
+            return false;
+        }
+    }
     entry->value = stored;
     s->count += 1u;
     return true;

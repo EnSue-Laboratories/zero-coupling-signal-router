@@ -14,6 +14,7 @@ int main(void) {
     zcsr_state* state = zcsr_state_init(state_mem, sizeof state_mem);
     void* a;
     void* b;
+    size_t capacity;
     zcsr_value v;
 
     if (fail_if(!arena || !state)) return 1;
@@ -28,23 +29,33 @@ int main(void) {
     if (fail_if(zcsr_arena_used(arena) == 0)) return 7;
     zcsr_arena_reset(arena);
     if (fail_if(zcsr_arena_used(arena) != 0)) return 8;
+    capacity = zcsr_arena_capacity(arena);
+    if (fail_if(!zcsr_arena_alloc(arena, capacity - 1u, 1))) return 9;
+    if (fail_if(zcsr_arena_alloc(arena, 1u, 64u) != 0)) return 10;
 
-    if (fail_if(!zcsr_state_set(state, "visible", zcsr_bool(true)))) return 9;
-    if (fail_if(!zcsr_state_set(state, "count", zcsr_int(42)))) return 10;
-    if (fail_if(!zcsr_state_set(state, "label", zcsr_str("potion")))) return 11;
-    if (fail_if(!zcsr_state_has(state, "visible"))) return 12;
+    if (fail_if(!zcsr_state_set(state, "visible", zcsr_bool(true)))) return 11;
+    if (fail_if(!zcsr_state_set(state, "count", zcsr_int(42)))) return 12;
+    if (fail_if(!zcsr_state_set(state, "label", zcsr_str("potion")))) return 13;
+    if (fail_if(!zcsr_state_has(state, "visible"))) return 14;
 
     v = zcsr_state_get(state, "visible");
-    if (fail_if(v.type != ZCSR_BOOL || !v.b)) return 13;
+    if (fail_if(v.type != ZCSR_BOOL || !v.b)) return 15;
     v = zcsr_state_get(state, "count");
-    if (fail_if(v.type != ZCSR_INT || v.i != 42)) return 14;
+    if (fail_if(v.type != ZCSR_INT || v.i != 42)) return 16;
     v = zcsr_state_get(state, "label");
-    if (fail_if(v.type != ZCSR_STR || !v.s || v.s[0] != 'p')) return 15;
+    if (fail_if(v.type != ZCSR_STR || !v.s || v.s[0] != 'p')) return 17;
 
-    if (fail_if(!zcsr_state_set(state, "count", zcsr_int(43)))) return 16;
+    if (fail_if(!zcsr_state_set(state, "count", zcsr_int(43)))) return 18;
     v = zcsr_state_get(state, "count");
-    if (fail_if(v.type != ZCSR_INT || v.i != 43)) return 17;
-    if (fail_if(zcsr_state_get(state, "missing").type != ZCSR_NONE)) return 18;
+    if (fail_if(v.type != ZCSR_INT || v.i != 43)) return 19;
+    if (fail_if(zcsr_state_get(state, "missing").type != ZCSR_NONE)) return 20;
+
+    if (fail_if(!zcsr_state_set(state, "hsm.state", zcsr_str("combat_mode")))) return 21;
+    for (int i = 0; i < 200; ++i) {
+        if (fail_if(!zcsr_state_set(state, "hsm.state", zcsr_str((i % 2) ? "idle" : "cast")))) return 22;
+    }
+    v = zcsr_state_get(state, "hsm.state");
+    if (fail_if(v.type != ZCSR_STR || !v.s || v.s[0] != 'i')) return 23;
 
     return 0;
 }
