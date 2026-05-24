@@ -1,35 +1,34 @@
 #ifndef ZCSR_PLATFORM_H
 #define ZCSR_PLATFORM_H
-// Agent 5 — Platform abstraction. Win32 / X11 / Cocoa, auto-selected at compile time.
-// NO OpenGL/DirectX/Vulkan. Exactly one backend is selected by the gates below.
-// Implementer: modules/platform.
+/* Agent 5 — Platform abstraction. Win32 / X11 / Cocoa, auto-selected at compile time.
+ * NO OpenGL/DirectX/Vulkan. Exactly one backend is selected by the gates below.
+ * Implementer: modules/platform. */
 
-namespace zcsr {
-
-enum class Platform { Unknown, Windows, Linux, MacOS };
+typedef enum {
+    ZCSR_PLATFORM_UNKNOWN = 0,
+    ZCSR_PLATFORM_WINDOWS,
+    ZCSR_PLATFORM_LINUX,
+    ZCSR_PLATFORM_MACOS
+} zcsr_platform;
 
 #if defined(_WIN32)
-constexpr Platform kPlatform = Platform::Windows;
+#  define ZCSR_PLATFORM ZCSR_PLATFORM_WINDOWS
 #elif defined(__APPLE__)
-constexpr Platform kPlatform = Platform::MacOS;
+#  define ZCSR_PLATFORM ZCSR_PLATFORM_MACOS
 #elif defined(__linux__)
-constexpr Platform kPlatform = Platform::Linux;
+#  define ZCSR_PLATFORM ZCSR_PLATFORM_LINUX
 #else
-constexpr Platform kPlatform = Platform::Unknown;
+#  define ZCSR_PLATFORM ZCSR_PLATFORM_UNKNOWN
 #endif
 
-struct Rect { int x, y, w, h; };
+typedef struct { int x, y, w, h; } zcsr_rect;
 
-// A native top-level surface the Overlay draws onto (no engine subwindow).
-// Borderless, transparent, always-on-top is requested at create().
-class INativeSurface {
-public:
-    virtual ~INativeSurface() = default;
-    virtual bool  create(const char* title, Rect bounds) = 0;
-    virtual void  destroy() = 0;
-    virtual void* nativeHandle() const = 0; // HWND / Window / NSWindow*
-    virtual void  pumpEvents() = 0;
-};
+typedef struct zcsr_surface zcsr_surface; /* opaque native top-level surface */
 
-} // namespace zcsr
-#endif // ZCSR_PLATFORM_H
+/* Borderless, transparent, always-on-top is requested at create(). NULL on failure. */
+zcsr_surface* zcsr_surface_create(const char* title, zcsr_rect bounds);
+void          zcsr_surface_destroy(zcsr_surface*);
+void*         zcsr_surface_native_handle(const zcsr_surface*); /* HWND / Window / NSWindow* */
+void          zcsr_surface_pump_events(zcsr_surface*);
+
+#endif /* ZCSR_PLATFORM_H */

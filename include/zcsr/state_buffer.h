@@ -1,26 +1,20 @@
 #ifndef ZCSR_STATE_BUFFER_H
 #define ZCSR_STATE_BUFFER_H
-// Agent 1 — read-only game state buffer (string/int/bool). Implementer: modules/core.
-// Read and write sides are split so most modules only ever see read-only state.
+/* Agent 1 — read-only game state buffer (string/int/bool). Implementer: modules/core.
+ * Reads take `const zcsr_state*`; only the privileged writer mutates. No heap growth. */
 #include "value.h"
+#include <stddef.h>
+#include <stdbool.h>
 
-namespace zcsr {
+typedef struct zcsr_state zcsr_state; /* opaque */
 
-// Read-only view of shared state. Keys are NUL-terminated strings.
-class IStateReader {
-public:
-    virtual ~IStateReader() = default;
-    virtual Value get(const char* key) const = 0;
-    virtual bool  has(const char* key) const = 0;
-};
+zcsr_state* zcsr_state_init(void* buffer, size_t bytes);
 
-// Privileged write side (e.g., the HSM persists its current state here).
-// Returns false when fixed capacity is exceeded — never grows the heap.
-class IStateWriter {
-public:
-    virtual ~IStateWriter() = default;
-    virtual bool set(const char* key, Value v) = 0;
-};
+/* read side (const) */
+zcsr_value  zcsr_state_get(const zcsr_state*, const char* key);
+bool        zcsr_state_has(const zcsr_state*, const char* key);
 
-} // namespace zcsr
-#endif // ZCSR_STATE_BUFFER_H
+/* write side (privileged) — false when fixed capacity is exceeded; never grows the heap */
+bool        zcsr_state_set(zcsr_state*, const char* key, zcsr_value v);
+
+#endif /* ZCSR_STATE_BUFFER_H */
