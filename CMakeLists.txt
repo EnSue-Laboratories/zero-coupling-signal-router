@@ -21,6 +21,11 @@ zcsr_module(signal)    # Agent 2
 zcsr_module(hsm)       # Agent 3
 zcsr_module(overlay)   # Agent 4
 zcsr_module(platform)  # Agent 5
+if(UNIX AND NOT APPLE)
+  find_package(X11 REQUIRED)
+  target_link_libraries(zcsr_platform PUBLIC ${X11_LIBRARIES})
+  target_include_directories(zcsr_platform PRIVATE ${X11_INCLUDE_DIR})
+endif()
 
 # --- Agent 6: Integration & Validation (architecture/review owned) ---
 add_executable(zcsr_demo  integration/demo.c)
@@ -35,6 +40,10 @@ enable_testing()
 add_executable(zcsr_test_signal tests/test_signal.c)
 target_link_libraries(zcsr_test_signal PRIVATE zcsr_signal zcsr_contracts)
 add_test(NAME signal_router COMMAND zcsr_test_signal)
+
+add_executable(test_core tests/test_core.c)
+target_link_libraries(test_core PRIVATE zcsr_core)
+add_test(NAME core COMMAND test_core)
 
 # --- Zero-coupling guard: fail if a module includes another module ---
 add_custom_target(check_coupling

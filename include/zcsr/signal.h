@@ -32,9 +32,10 @@ void zcsr_emit(const zcsr_conn* table, size_t count, const char* signal, const c
  *   ...
  *   ui_emit("btn.ok", "payload");   // dispatches to on_ok
  *
- * Because the list is a macro, slots are checked against the fixed `zcsr_slot_fn` signature at
- * compile time (a mismatched slot fails to compile). */
-#define ZCSR_CONN(sig, slot) { (sig), (slot) },
+ * Each slot is checked against the fixed `zcsr_slot_fn` signature via C11 `_Generic`: a slot
+ * with the wrong signature has no matching association and is a hard COMPILE ERROR (not just a
+ * warning — independent of `-Werror`). */
+#define ZCSR_CONN(sig, slot) { (sig), _Generic((slot), zcsr_slot_fn: (slot)) },
 #define ZCSR_DEFINE_ROUTER(name, LIST)                                                       \
     static const zcsr_conn name##_table[] = { LIST(ZCSR_CONN) };                              \
     static inline void name##_emit(const char* signal, const char* payload) {                \
