@@ -62,6 +62,25 @@ int main(void) {
         if (h2) zcsr_hsm_destroy(h2);
     }
 
-    if (!fails) printf("test_hsm: PASS (hierarchical + persistence + in-memory mode)\n");
+    /* Persistence stays consistent across many shrink/grow transitions (relies on create()
+     * reserving the hsm.state slot at max size + core's capacity-based reuse). A modest buffer
+     * would exhaust here if every grow appended a fresh string. */
+    {
+        static unsigned char mem2[8 * 1024];
+        zcsr_state* st2 = zcsr_state_init(mem2, sizeof mem2);
+        zcsr_hsm*   h3  = zcsr_hsm_create(st2, states, 4, trans, 4, "idle");
+        const char* cyc[] = { "start", "pause", "resume", "stop" }; /* idle->timing->paused->timing->idle */
+        int ok = (h3 != 0);
+        for (int r = 0; r < 300 && ok; ++r) {
+            for (size_t i = 0; i < 4 && ok; ++i) {
+                zcsr_hsm_dispatch(h3, cyc[i], 0);
+                if (strcmp(persisted(st2), zcsr_hsm_current(h3)) != 0) ok = 0; /* mirror must track */
+            }
+        }
+        check("hsm.state tracks current() across 300 cycles (no desync/exhaustion)", ok, &fails);
+        if (h3) zcsr_hsm_destroy(h3);
+    }
+
+    if (!fails) printf("test_hsm: PASS (hierarchical + persistence + in-memory + long-run consistency)\n");
     return fails ? 1 : 0;
 }

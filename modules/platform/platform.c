@@ -123,6 +123,10 @@ void* zcsr_surface_native_handle(const zcsr_surface* s) {
     return (s && s->in_use) ? (void*)(uintptr_t)s->window : 0;
 }
 
+void* zcsr_surface_native_display(const zcsr_surface* s) {
+    return (s && s->in_use) ? s->display : 0; /* the X11 Display*, reusable by renderers */
+}
+
 void zcsr_surface_pump_events(zcsr_surface* s) {
     Display* display;
     if (!s || !s->in_use || !s->display) return;
@@ -190,6 +194,10 @@ void* zcsr_surface_native_handle(const zcsr_surface* s) {
     return (s && s->in_use) ? s->hwnd : 0;
 }
 
+void* zcsr_surface_native_display(const zcsr_surface* s) {
+    (void)s; return 0; /* Win32 has no separate display connection; the HWND suffices */
+}
+
 void zcsr_surface_pump_events(zcsr_surface* s) {
     MSG msg;
     (void)s;
@@ -203,5 +211,6 @@ void zcsr_surface_pump_events(zcsr_surface* s) {
 zcsr_surface* zcsr_surface_create(const char* title, zcsr_rect bounds) { (void)title; (void)bounds; return 0; }
 void          zcsr_surface_destroy(zcsr_surface* s)                    { zcsr_surface_release(s); }
 void*         zcsr_surface_native_handle(const zcsr_surface* s)        { (void)s; return 0; }
+void*         zcsr_surface_native_display(const zcsr_surface* s)       { (void)s; return 0; }
 void          zcsr_surface_pump_events(zcsr_surface* s)                { (void)s; }
 #endif
