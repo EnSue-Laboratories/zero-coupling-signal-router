@@ -19,8 +19,27 @@ typedef struct {
     zcsr_slot_fn slot;
 } zcsr_conn;
 
-/* Dispatch `payload` to every connection whose tag matches `signal`. Pure table walk; no heap.
- * Agent 2 also provides an X-macro (ZCSR_ROUTER) to declare the static const table cleanly. */
+/* Dispatch `payload` to every connection whose tag matches `signal`. Pure table walk; no heap. */
 void zcsr_emit(const zcsr_conn* table, size_t count, const char* signal, const char* payload);
+
+/* ---- Compile-time router (X-macro) ---------------------------------------------------------
+ * Declare connections ONCE as an X-macro list, then expand into a `static const` table plus a
+ * typed `<name>_emit()`. The table is built at compile time — no dynamic registration, no heap.
+ *
+ *   bool on_ok(const char*);  bool on_cancel(const char*);
+ *   #define MY_CONNS(X)  X("btn.ok", on_ok)  X("btn.cancel", on_cancel)
+ *   ZCSR_DEFINE_ROUTER(ui, MY_CONNS)
+ *   ...
+ *   ui_emit("btn.ok", "payload");   // dispatches to on_ok
+ *
+ * Because the list is a macro, slots are checked against the fixed `zcsr_slot_fn` signature at
+ * compile time (a mismatched slot fails to compile). */
+#define ZCSR_CONN(sig, slot) { (sig), (slot) },
+#define ZCSR_DEFINE_ROUTER(name, LIST)                                                       \
+    static const zcsr_conn name##_table[] = { LIST(ZCSR_CONN) };                              \
+    static inline void name##_emit(const char* signal, const char* payload) {                \
+        zcsr_emit(name##_table, sizeof(name##_table) / sizeof((name##_table)[0]),             \
+                  signal, payload);                                                           \
+    }
 
 #endif /* ZCSR_SIGNAL_H */

@@ -30,6 +30,12 @@ foreach(exe zcsr_demo zcsr_bench)
     zcsr_core zcsr_signal zcsr_hsm zcsr_overlay zcsr_platform)
 endforeach()
 
+# --- Tests ---
+enable_testing()
+add_executable(zcsr_test_signal tests/test_signal.c)
+target_link_libraries(zcsr_test_signal PRIVATE zcsr_signal zcsr_contracts)
+add_test(NAME signal_router COMMAND zcsr_test_signal)
+
 # --- Zero-coupling guard: fail if a module includes another module ---
 add_custom_target(check_coupling
   COMMAND ${CMAKE_SOURCE_DIR}/tools/check_no_cross_includes.sh
