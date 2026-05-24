@@ -37,9 +37,22 @@ static size_t hsm_find_state(const zcsr_hsm* h, const char* name) {
     return ZCSR_HSM_NONE;
 }
 
-/* Mirror current state into the state buffer. Returns false only if persistence was requested
- * (persist != NULL) but the write failed (e.g. buffer too small). The in-memory current() is
- * authoritative regardless. */
+static const char* hsm_longest_state_name(const zcsr_hsm* h) {
+    const char* longest = "";
+    size_t best = 0;
+    for (size_t i = 0; i < h->state_count; ++i) {
+        const char* n = h->states[i].name;
+        size_t len = 0;
+        if (!n) continue;
+        while (n[len]) ++len;
+        if (len >= best) { best = len; longest = n; }
+    }
+    return longest;
+}
+
+/* Mirror current state into the state buffer. Once create() reserves the "hsm.state" slot at its
+ * maximum size, every later write fits (core reuses the slot in place), so this only fails during
+ * create's reservation. The in-memory current() is authoritative regardless. */
 static bool hsm_persist(zcsr_hsm* h) {
     if (!h->persist) return true; /* persistence not requested */
     return zcsr_state_set(h->persist, "hsm.state", zcsr_str(zcsr_hsm_current(h)));
@@ -70,9 +83,15 @@ zcsr_hsm* zcsr_hsm_create(zcsr_state* persist_to,
     init_idx = hsm_find_state(h, initial);
     if (init_idx == ZCSR_HSM_NONE) { h->in_use = false; return 0; }
     h->current = init_idx;
-    /* Fail fast if persistence was requested but cannot be honored (e.g. state buffer too small),
-     * so the caller never gets an HSM whose state silently diverges from the buffer. */
-    if (!hsm_persist(h)) { h->in_use = false; return 0; }
+    /* Reserve the "hsm.state" slot at its MAX size (longest state name) up front: with core's
+     * same-key in-place reuse, every later transition's persist then fits and can't desync.
+     * If even this reservation fails, the buffer is too small -> fail create (no silent divergence). */
+    if (persist_to) {
+        if (!zcsr_state_set(persist_to, "hsm.state", zcsr_str(hsm_longest_state_name(h)))) {
+            h->in_use = false; return 0;
+        }
+    }
+    if (!hsm_persist(h)) { h->in_use = false; return 0; } /* write the actual initial state */
     return h;
 }
 
