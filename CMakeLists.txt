@@ -35,6 +35,8 @@ if(UNIX AND NOT APPLE)
   target_include_directories(zcsr_overlay PRIVATE ${X11_INCLUDE_DIR})
   target_link_libraries(zcsr_input PUBLIC ${X11_LIBRARIES})  # input pumps X11 key/close events
   target_include_directories(zcsr_input PRIVATE ${X11_INCLUDE_DIR})
+  target_link_libraries(zcsr_render PUBLIC ${X11_LIBRARIES})
+  target_include_directories(zcsr_render PRIVATE ${X11_INCLUDE_DIR})
 endif()
 
 # --- Agent 6: Integration & Validation (architecture/review owned) ---
@@ -77,6 +79,15 @@ add_test(NAME gamelogic COMMAND test_gamelogic)
 add_executable(test_input tests/test_input.c)
 target_link_libraries(test_input PRIVATE zcsr_input zcsr_platform)  # input uses platform accessors
 add_test(NAME input COMMAND test_input)
+
+add_executable(test_render tests/test_render.c)
+target_link_libraries(test_render PRIVATE zcsr_render zcsr_platform)  # render uses platform accessors
+add_test(NAME render COMMAND test_render)
+
+# Sprite-batch throughput gate (200 sprites < 1ms). Not a ctest: the flush blits onto a real
+# surface, so it must run on a GUI host (skips with exit 0 when headless).
+add_executable(zcsr_render_bench integration/bench_render.c)
+target_link_libraries(zcsr_render_bench PRIVATE zcsr_render zcsr_platform)
 
 # --- Zero-coupling guard: fail if a module includes another module ---
 add_custom_target(check_coupling
