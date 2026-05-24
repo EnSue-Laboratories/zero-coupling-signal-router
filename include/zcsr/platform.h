@@ -29,6 +29,9 @@ typedef struct zcsr_surface zcsr_surface; /* opaque native top-level surface */
 zcsr_surface* zcsr_surface_create(const char* title, zcsr_rect bounds);
 void          zcsr_surface_destroy(zcsr_surface*);
 void*         zcsr_surface_native_handle(const zcsr_surface*); /* HWND / Window / NSWindow* */
+/* Backend-owned drawing connection, so renderers (overlay) REUSE it instead of opening their
+ * own per frame. X11: the `Display*`. Win32/Cocoa: NULL (the native handle is sufficient). */
+void*         zcsr_surface_native_display(const zcsr_surface*);
 void          zcsr_surface_pump_events(zcsr_surface*);
 
 #endif /* ZCSR_PLATFORM_H */
