@@ -5,6 +5,11 @@ set(CMAKE_C_STANDARD 11)          # C11/C17 — no C++
 set(CMAKE_C_STANDARD_REQUIRED ON)
 add_compile_options(-Wall -Wextra -Wpedantic)
 
+# macOS backends are Objective-C (.m). Enable only on Apple so Linux/Windows builds stay pure C.
+if(APPLE)
+  enable_language(OBJC)
+endif()
+
 # --- Shared interface contracts: the ONLY include surface modules may use ---
 add_library(zcsr_contracts INTERFACE)
 target_include_directories(zcsr_contracts INTERFACE ${CMAKE_SOURCE_DIR}/include)
@@ -12,8 +17,15 @@ target_include_directories(zcsr_contracts INTERFACE ${CMAKE_SOURCE_DIR}/include)
 # --- Each module compiles independently, seeing ONLY the contracts (zero-coupling) ---
 function(zcsr_module name)
   file(GLOB SRC CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/modules/${name}/*.c)
+  if(APPLE)
+    file(GLOB MSRC CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/modules/${name}/*.m)
+    list(APPEND SRC ${MSRC})
+  endif()
   add_library(zcsr_${name} STATIC ${SRC})
   target_link_libraries(zcsr_${name} PUBLIC zcsr_contracts)
+  if(APPLE AND MSRC)
+    set_source_files_properties(${MSRC} PROPERTIES COMPILE_OPTIONS "-fobjc-arc") # Cocoa backends use ARC
+  endif()
 endfunction()
 
 zcsr_module(core)      # Agent 1
@@ -43,6 +55,14 @@ if(UNIX AND NOT APPLE)
   target_include_directories(zcsr_input PRIVATE ${X11_INCLUDE_DIR})
   target_link_libraries(zcsr_render PUBLIC ${X11_LIBRARIES})
   target_include_directories(zcsr_render PRIVATE ${X11_INCLUDE_DIR})
+endif()
+
+if(APPLE)
+  # Cocoa backends (NSWindow / NSView draw / NSEvent / NSSound) for platform/overlay/render/input/audio.
+  find_library(COCOA_FRAMEWORK Cocoa REQUIRED)
+  foreach(m platform overlay render input audio)
+    target_link_libraries(zcsr_${m} PUBLIC ${COCOA_FRAMEWORK})
+  endforeach()
 endif()
 
 # --- Agent 6: Integration & Validation (architecture/review owned) ---

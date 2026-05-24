@@ -270,6 +270,24 @@ static void zcsr_sprite_batch_flush_win32(zcsr_sprite_batch* s, HWND hwnd) {
     }
     ReleaseDC(hwnd, dc);
 }
+
+#elif defined(__APPLE__)
+#include "render_cocoa.h" /* same-module C-ABI shim over the Cocoa fill backend */
+
+static void zcsr_sprite_batch_flush_cocoa(zcsr_sprite_batch* s, void* window) {
+    if (!s || !window) return;
+    zcsr_cocoa_render_begin(window);
+    for (size_t i = 0; i < s->count; ++i) {
+        const zcsr_sprite* sprite = &s->sprites[i];
+        const uint8_t* px = sprite->tex->rgba;
+        int x = (int)sprite->dst.x;
+        int y = (int)sprite->dst.y;
+        int w = sprite->dst.w > 0.0f ? (int)sprite->dst.w : sprite->tex->width;
+        int h = sprite->dst.h > 0.0f ? (int)sprite->dst.h : sprite->tex->height;
+        zcsr_cocoa_render_fill(window, x, y, w, h, px[0], px[1], px[2]);
+    }
+    zcsr_cocoa_render_end(window);
+}
 #endif
 
 void zcsr_sprite_batch_flush(zcsr_sprite_batch* s) {
@@ -284,6 +302,8 @@ void zcsr_sprite_batch_flush(zcsr_sprite_batch* s) {
     zcsr_sprite_batch_flush_x11(s, (Display*)zcsr_surface_native_display(s->target), (Window)(uintptr_t)handle);
 #elif defined(_WIN32)
     zcsr_sprite_batch_flush_win32(s, (HWND)handle);
+#elif defined(__APPLE__)
+    zcsr_sprite_batch_flush_cocoa(s, handle);
 #else
     (void)handle;
 #endif

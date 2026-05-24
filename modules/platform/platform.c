@@ -207,6 +207,45 @@ void zcsr_surface_pump_events(zcsr_surface* s) {
     }
 }
 
+#elif defined(__APPLE__)
+/* Cocoa lives in platform_cocoa.m (Objective-C). This C side keeps the shared pool/struct and
+ * delegates the NSWindow work through a thin C-ABI shim — no Objective-C leaks into the contract. */
+#include "platform_cocoa.h"
+
+zcsr_surface* zcsr_surface_create(const char* title, zcsr_rect bounds) {
+    void* window;
+    zcsr_surface* surface;
+    if (bounds.w <= 0) bounds.w = 320;
+    if (bounds.h <= 0) bounds.h = 120;
+    window = zcsr_cocoa_window_create(title ? title : "zcsr", bounds.x, bounds.y, bounds.w, bounds.h);
+    if (!window) return 0;
+    surface = zcsr_surface_acquire();
+    if (!surface) {
+        zcsr_cocoa_window_destroy(window);
+        return 0;
+    }
+    surface->ns_window = window;
+    return surface;
+}
+
+void zcsr_surface_destroy(zcsr_surface* s) {
+    if (!s || !s->in_use) return;
+    if (s->ns_window) zcsr_cocoa_window_destroy(s->ns_window);
+    zcsr_surface_release(s);
+}
+
+void* zcsr_surface_native_handle(const zcsr_surface* s) {
+    return (s && s->in_use) ? s->ns_window : 0; /* the NSWindow* */
+}
+
+void* zcsr_surface_native_display(const zcsr_surface* s) {
+    (void)s; return 0; /* Cocoa has no separate display connection; the NSWindow* suffices */
+}
+
+void zcsr_surface_pump_events(zcsr_surface* s) {
+    if (s && s->in_use && s->ns_window) zcsr_cocoa_window_pump(s->ns_window);
+}
+
 #else
 zcsr_surface* zcsr_surface_create(const char* title, zcsr_rect bounds) { (void)title; (void)bounds; return 0; }
 void          zcsr_surface_destroy(zcsr_surface* s)                    { zcsr_surface_release(s); }

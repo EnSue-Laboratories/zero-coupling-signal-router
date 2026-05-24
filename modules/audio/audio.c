@@ -15,6 +15,10 @@
 #include <pthread.h>
 #endif
 
+#if defined(__APPLE__)
+#include "audio_cocoa.h" /* same-module C-ABI shim over the Cocoa NSSound backend */
+#endif
+
 enum {
     ZCSR_AUDIO_POOL = 2,
     ZCSR_AUDIO_MAX_SOUNDS = 16,
@@ -260,6 +264,8 @@ static int zcsr_audio_find_sound_locked(const zcsr_audio* a, const char* id) {
 static void zcsr_audio_backend_play(const char* path) {
 #if defined(_WIN32)
     if (path) PlaySoundA(path, NULL, SND_FILENAME | SND_ASYNC);
+#elif defined(__APPLE__)
+    zcsr_cocoa_sound_play(path); /* NSSound, single-stream */
 #else
     (void)path; /* No dependency-free POSIX desktop audio backend; command state remains testable. */
 #endif
@@ -268,6 +274,8 @@ static void zcsr_audio_backend_play(const char* path) {
 static void zcsr_audio_backend_stop(void) {
 #if defined(_WIN32)
     PlaySoundA(NULL, NULL, 0);
+#elif defined(__APPLE__)
+    zcsr_cocoa_sound_stop();
 #endif
 }
 
