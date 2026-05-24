@@ -40,6 +40,10 @@ add_executable(test_core tests/test_core.c)
 target_link_libraries(test_core PRIVATE zcsr_core)
 add_test(NAME core COMMAND test_core)
 
+add_executable(test_hsm tests/test_hsm.c)
+target_link_libraries(test_hsm PRIVATE zcsr_hsm zcsr_core)  # hsm persists into the core state buffer
+add_test(NAME hsm COMMAND test_hsm)
+
 # --- Zero-coupling guard: fail if a module includes another module ---
 add_custom_target(check_coupling
   COMMAND ${CMAKE_SOURCE_DIR}/tools/check_no_cross_includes.sh
