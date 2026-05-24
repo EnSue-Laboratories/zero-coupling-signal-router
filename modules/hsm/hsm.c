@@ -14,6 +14,11 @@ struct zcsr_hsm {
     size_t                     current; /* index into states */
 };
 
+/* No-heap instance allocator: a fixed static pool (same pattern as modules/platform surfaces
+ * and modules/overlay). "No global state" is satisfied at the state-machine level — each HSM
+ * instance owns its own `current`/config independently; the pool is only allocation storage,
+ * not shared machine state. (If the team wants strictly zero static storage, switch to
+ * caller-provided instance memory — see thread discussion.) */
 enum { ZCSR_HSM_POOL = 4 };
 static struct zcsr_hsm zcsr_hsm_pool[ZCSR_HSM_POOL];
 
@@ -32,10 +37,12 @@ static size_t hsm_find_state(const zcsr_hsm* h, const char* name) {
     return ZCSR_HSM_NONE;
 }
 
-static void hsm_persist(zcsr_hsm* h) {
-    if (h->persist) {
-        zcsr_state_set(h->persist, "hsm.state", zcsr_str(zcsr_hsm_current(h)));
-    }
+/* Mirror current state into the state buffer. Returns false only if persistence was requested
+ * (persist != NULL) but the write failed (e.g. buffer too small). The in-memory current() is
+ * authoritative regardless. */
+static bool hsm_persist(zcsr_hsm* h) {
+    if (!h->persist) return true; /* persistence not requested */
+    return zcsr_state_set(h->persist, "hsm.state", zcsr_str(zcsr_hsm_current(h)));
 }
 
 zcsr_hsm* zcsr_hsm_create(zcsr_state* persist_to,
@@ -63,7 +70,9 @@ zcsr_hsm* zcsr_hsm_create(zcsr_state* persist_to,
     init_idx = hsm_find_state(h, initial);
     if (init_idx == ZCSR_HSM_NONE) { h->in_use = false; return 0; }
     h->current = init_idx;
-    hsm_persist(h);
+    /* Fail fast if persistence was requested but cannot be honored (e.g. state buffer too small),
+     * so the caller never gets an HSM whose state silently diverges from the buffer. */
+    if (!hsm_persist(h)) { h->in_use = false; return 0; }
     return h;
 }
 
@@ -91,7 +100,7 @@ bool zcsr_hsm_dispatch(zcsr_hsm* h, const char* signal, const char* payload) {
                 size_t to_idx = hsm_find_state(h, h->trans[t].to);
                 if (to_idx == ZCSR_HSM_NONE) return false; /* invalid target */
                 h->current = to_idx;
-                hsm_persist(h);
+                (void)hsm_persist(h); /* best-effort mirror; current() stays authoritative */
                 return true;
             }
         }

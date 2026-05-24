@@ -51,6 +51,17 @@ int main(void) {
 
     check("persist final = idle", strcmp(persisted(st), "idle") == 0, &fails);
 
-    if (!fails) printf("test_hsm: PASS (hierarchical transitions + persistence)\n");
+    /* persist_to == NULL: HSM works in-memory only; create still succeeds, current() correct. */
+    {
+        zcsr_hsm* h2 = zcsr_hsm_create(0, states, 4, trans, 4, "idle");
+        check("create without persistence", h2 != 0, &fails);
+        check("h2 initial idle", h2 && strcmp(zcsr_hsm_current(h2), "idle") == 0, &fails);
+        check("h2 start -> timing (in-memory)",
+              h2 && zcsr_hsm_dispatch(h2, "start", 0) &&
+              strcmp(zcsr_hsm_current(h2), "active.timing") == 0, &fails);
+        if (h2) zcsr_hsm_destroy(h2);
+    }
+
+    if (!fails) printf("test_hsm: PASS (hierarchical + persistence + in-memory mode)\n");
     return fails ? 1 : 0;
 }
