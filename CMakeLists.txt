@@ -45,6 +45,10 @@ add_executable(test_core tests/test_core.c)
 target_link_libraries(test_core PRIVATE zcsr_core)
 add_test(NAME core COMMAND test_core)
 
+add_executable(test_hsm tests/test_hsm.c)
+target_link_libraries(test_hsm PRIVATE zcsr_hsm zcsr_core)  # hsm persists into the core state buffer
+add_test(NAME hsm COMMAND test_hsm)
+
 add_executable(test_state_reuse tests/test_state_reuse.c)
 target_link_libraries(test_state_reuse PRIVATE zcsr_core)
 add_test(NAME state_reuse COMMAND test_state_reuse)
