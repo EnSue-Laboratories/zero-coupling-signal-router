@@ -6,8 +6,9 @@
  * (the contract leaves cross-platform normalization to the caller).
  *
  * NOTE: written without an Apple toolchain — NOT compiled here. Needs a Mac to build/verify.
- * Event-pump ownership between this and zcsr_surface_pump_events may want reconciling on-device
- * (same family of concern as the shared X11 event queue). */
+ * Event-pump ownership: zcsr_surface_pump_events (platform) drains all NON-key events and LEAVES
+ * key down/up in the queue, which this function consumes — so a typical "surface pump then input
+ * pump" loop delivers keys correctly. */
 #if defined(__APPLE__)
 #import <Cocoa/Cocoa.h>
 #include "input_cocoa.h"

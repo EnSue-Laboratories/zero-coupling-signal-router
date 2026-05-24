@@ -53,8 +53,9 @@ Linux/Windows builds stay pure C and are unaffected.
   is deprecated on recent macOS; a custom `NSView`+`drawRect:` is the longer-term path.
 - **Real RGBA blit**: render draws solid rects (first-pixel color), like the other backends; a
   `CGImage`/`IOSurface` blit is the follow-up.
-- **Event-pump ownership**: `zcsr_surface_pump_events` and `zcsr_input_pump` both drain the app
-  queue (same family of concern as the shared X11 queue) — reconcile if keys are missed.
+- **Event-pump ownership**: resolved by design — `zcsr_surface_pump_events` drains all NON-key
+  events and leaves key down/up for `zcsr_input_pump` to consume, so a normal "surface pump then
+  input pump" loop delivers keys. (Verify on-device that the split behaves as intended.)
 - **Close semantics**: borderless windows have no close button; input treats "window no longer
   visible" as a close request.
 - **Audio**: NSSound is single-stream (one current sound), matching Win32 `PlaySound`.

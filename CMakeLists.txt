@@ -59,7 +59,11 @@ endif()
 
 if(APPLE)
   # Cocoa backends (NSWindow / NSView draw / NSEvent / NSSound) for platform/overlay/render/input/audio.
-  find_library(COCOA_FRAMEWORK Cocoa REQUIRED)
+  # (find_library REQUIRED needs CMake 3.18; we target 3.16, so check explicitly.)
+  find_library(COCOA_FRAMEWORK Cocoa)
+  if(NOT COCOA_FRAMEWORK)
+    message(FATAL_ERROR "Cocoa framework not found — required for the macOS backends.")
+  endif()
   foreach(m platform overlay render input audio)
     target_link_libraries(zcsr_${m} PUBLIC ${COCOA_FRAMEWORK})
   endforeach()

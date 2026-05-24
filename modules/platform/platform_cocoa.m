@@ -56,8 +56,11 @@ void zcsr_cocoa_window_pump(void* ns_window) {
     (void)ns_window;
     @autoreleasepool {
         NSEvent* event;
-        /* Non-blocking drain of the app event queue. */
-        while ((event = [NSApp nextEventMatchingMask:NSEventMaskAny
+        /* Non-blocking drain of NON-key app events. Key down/up are intentionally LEFT in the
+         * queue so zcsr_cocoa_input_pump (input module) consumes them — otherwise a typical loop
+         * (surface pump before input pump) would swallow keys before input ever sees them. */
+        const NSEventMask mask = NSEventMaskAny & ~(NSEventMaskKeyDown | NSEventMaskKeyUp);
+        while ((event = [NSApp nextEventMatchingMask:mask
                                            untilDate:[NSDate distantPast]
                                               inMode:NSDefaultRunLoopMode
                                              dequeue:YES]) != nil) {

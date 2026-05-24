@@ -8,7 +8,7 @@ fail=0
 while IFS= read -r f; do
   # Flag cross-module / relative includes, but allow the one sanctioned vendored dependency
   # (third_party single-header, per third_party/README.md).
-  if grep -nE '#include[[:space:]]*[<"](\.\./|modules/)' "$f" | grep -vE 'third_party/'; then
+  if grep -nE '#[[:space:]]*(include|import)[[:space:]]*[<"](\.\./|modules/)' "$f" | grep -vE 'third_party/'; then
     echo "  ^ CROSS-MODULE / RELATIVE INCLUDE in: $f"
     fail=1
   fi
