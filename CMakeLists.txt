@@ -25,6 +25,8 @@ if(UNIX AND NOT APPLE)
   find_package(X11 REQUIRED)
   target_link_libraries(zcsr_platform PUBLIC ${X11_LIBRARIES})
   target_include_directories(zcsr_platform PRIVATE ${X11_INCLUDE_DIR})
+  target_link_libraries(zcsr_overlay PUBLIC ${X11_LIBRARIES})
+  target_include_directories(zcsr_overlay PRIVATE ${X11_INCLUDE_DIR})
 endif()
 
 # --- Agent 6: Integration & Validation (architecture/review owned) ---
@@ -44,6 +46,9 @@ add_test(NAME signal_router COMMAND zcsr_test_signal)
 add_executable(test_core tests/test_core.c)
 target_link_libraries(test_core PRIVATE zcsr_core)
 add_test(NAME core COMMAND test_core)
+add_executable(test_overlay tests/test_overlay.c)
+target_link_libraries(test_overlay PRIVATE zcsr_overlay zcsr_platform)
+add_test(NAME overlay COMMAND test_overlay)
 
 add_executable(test_hsm tests/test_hsm.c)
 target_link_libraries(test_hsm PRIVATE zcsr_hsm zcsr_core)  # hsm persists into the core state buffer
