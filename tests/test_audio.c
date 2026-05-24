@@ -77,6 +77,15 @@ int main(void) {
 
         zcsr_audio_stop(a);
         CK("play after stop -> false", !zcsr_audio_slot_play("tick"));
+
+        /* pool slot + active engine must reset on stop: a fresh start works again */
+        zcsr_audio* a2 = zcsr_audio_start();
+        CK("restart after stop -> non-NULL", a2 != NULL);
+        if (a2) {
+            CK("re-register after restart -> true", zcsr_audio_register_wav(a2, "tick", good));
+            CK("play after restart -> true", zcsr_audio_slot_play("tick"));
+            zcsr_audio_stop(a2);
+        }
     }
 
     remove(good);
