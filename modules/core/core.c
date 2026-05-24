@@ -14,7 +14,8 @@ struct zcsr_arena {
 
 typedef struct {
     const char* key;
-    zcsr_value value;
+    zcsr_value  value;
+    size_t      value_cap; /* bytes allocated for value.s (when STR); enables in-place reuse */
 } zcsr_state_entry;
 
 struct zcsr_state {
@@ -156,6 +157,7 @@ zcsr_state* zcsr_state_init(void* buffer, size_t bytes) {
     for (size_t i = 0; i < max_entries; ++i) {
         state->entries[i].key = 0;
         state->entries[i].value = zcsr_none();
+        state->entries[i].value_cap = 0;
     }
 
     return state;
@@ -182,13 +184,18 @@ bool zcsr_state_set(zcsr_state* s, const char* key, zcsr_value v) {
         if (v.type == ZCSR_STR) {
             const char* text = v.s ? v.s : "";
             size_t bytes = zcsr_strlen(text) + 1u;
-            if (entry->value.type == ZCSR_STR && entry->value.s && bytes <= zcsr_strlen(entry->value.s) + 1u) {
+            /* Reuse the existing string slot iff the new value fits its ALLOCATED capacity
+             * (not its current length) — so a slot stays reusable after shrinking. */
+            if (entry->value.type == ZCSR_STR && entry->value.s && bytes <= entry->value_cap) {
                 zcsr_copy_string((char*)entry->value.s, text, bytes);
-                stored.s = entry->value.s;
+                stored.s = entry->value.s; /* value_cap unchanged */
             } else {
                 stored.s = zcsr_state_store_string(s, text);
                 if (!stored.s) return false;
+                entry->value_cap = bytes;  /* freshly allocated slot */
             }
+        } else {
+            entry->value_cap = 0;          /* value is no longer a string slot */
         }
         entry->value = stored;
         return true;
@@ -202,13 +209,16 @@ bool zcsr_state_set(zcsr_state* s, const char* key, zcsr_value v) {
         s->strings_used = checkpoint;
         return false;
     }
+    entry->value_cap = 0;
     if (v.type == ZCSR_STR) {
+        size_t bytes = zcsr_strlen(v.s ? v.s : "") + 1u;
         stored.s = zcsr_state_store_string(s, v.s ? v.s : "");
         if (!stored.s) {
             entry->key = 0;
             s->strings_used = checkpoint;
             return false;
         }
+        entry->value_cap = bytes;
     }
     entry->value = stored;
     s->count += 1u;

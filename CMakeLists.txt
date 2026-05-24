@@ -45,6 +45,10 @@ add_executable(test_core tests/test_core.c)
 target_link_libraries(test_core PRIVATE zcsr_core)
 add_test(NAME core COMMAND test_core)
 
+add_executable(test_state_reuse tests/test_state_reuse.c)
+target_link_libraries(test_state_reuse PRIVATE zcsr_core)
+add_test(NAME state_reuse COMMAND test_state_reuse)
+
 # --- Zero-coupling guard: fail if a module includes another module ---
 add_custom_target(check_coupling
   COMMAND ${CMAKE_SOURCE_DIR}/tools/check_no_cross_includes.sh
