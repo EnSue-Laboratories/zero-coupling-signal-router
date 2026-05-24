@@ -1,7 +1,6 @@
 /* Agent 2 — signal/slot dispatch. No heap, no dynamic registry.
- * This provides a working table-walk baseline so integration can dispatch today.
- * TODO(Agent 2 / Codex): add the ZCSR_ROUTER X-macro to declare the `static const zcsr_conn[]`
- * table at compile time (zero runtime registration), and keep tag matching minimal. */
+ * Runtime over a compile-time `static const zcsr_conn[]` table (declared via the
+ * ZCSR_DEFINE_ROUTER X-macro in zcsr/signal.h). This TU holds the dispatch walk. */
 #include "zcsr/signal.h"
 #include <string.h>
 

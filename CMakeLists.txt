@@ -35,7 +35,12 @@ foreach(exe zcsr_demo zcsr_bench)
     zcsr_core zcsr_signal zcsr_hsm zcsr_overlay zcsr_platform)
 endforeach()
 
+# --- Tests ---
 enable_testing()
+add_executable(zcsr_test_signal tests/test_signal.c)
+target_link_libraries(zcsr_test_signal PRIVATE zcsr_signal zcsr_contracts)
+add_test(NAME signal_router COMMAND zcsr_test_signal)
+
 add_executable(test_core tests/test_core.c)
 target_link_libraries(test_core PRIVATE zcsr_core)
 add_test(NAME core COMMAND test_core)
