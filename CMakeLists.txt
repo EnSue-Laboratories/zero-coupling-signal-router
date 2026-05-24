@@ -27,6 +27,12 @@ zcsr_module(input)     # Game Core Agent 1 — input / window / 60FPS timer
 zcsr_module(audio)     # Game Core Agent 2 — WAV audio (signals only)
 zcsr_module(render)    # Game Core Agent 3 — PNG (stb_image) + batch sprite renderer
 zcsr_module(gamelogic) # Game Core Agent 4 — AABB collision + binary save/load
+if(NOT WIN32)
+  find_package(Threads REQUIRED)
+  target_link_libraries(zcsr_audio PUBLIC Threads::Threads)
+else()
+  target_link_libraries(zcsr_audio PUBLIC winmm)
+endif()
 if(UNIX AND NOT APPLE)
   find_package(X11 REQUIRED)
   target_link_libraries(zcsr_platform PUBLIC ${X11_LIBRARIES})
@@ -83,6 +89,10 @@ add_test(NAME input COMMAND test_input)
 add_executable(test_render tests/test_render.c)
 target_link_libraries(test_render PRIVATE zcsr_render zcsr_platform)  # render uses platform accessors
 add_test(NAME render COMMAND test_render)
+
+add_executable(test_audio tests/test_audio.c)
+target_link_libraries(test_audio PRIVATE zcsr_audio zcsr_signal)
+add_test(NAME audio COMMAND test_audio)
 
 # Sprite-batch throughput gate (200 sprites < 1ms). Not a ctest: the flush blits onto a real
 # surface, so it must run on a GUI host (skips with exit 0 when headless).
