@@ -69,7 +69,8 @@ int main(void) {
 
     zcsr_gl_texture_filter(renderer, tex, true);
     zcsr_gl_texture_filter(renderer, tex, false);
-    zcsr_gl_sprite sprite = { tex, { 16.0f, 16.0f, 64.0f, 64.0f }, 0.25f, 1.0f, 1.0f, 1.0f, 1.0f };
+    zcsr_gl_sprite sprite = { tex, { 16.0f, 16.0f, 64.0f, 64.0f }, 0.25f, 1.0f, 1.0f, 1.0f, 1.0f,
+                              ZCSR_MOD_MULTIPLY, 0.0f };
     zcsr_gl_begin(renderer);
     zcsr_gl_submit(renderer, &sprite);
     zcsr_gl_draw_text(renderer, "ZCSR", 4.0f, 4.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);

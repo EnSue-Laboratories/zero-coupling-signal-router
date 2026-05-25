@@ -28,7 +28,9 @@ static void zcsr_fill_sprites(zcsr_gl_sprite* sprites, size_t count, zcsr_gl_tex
             0.45f + 0.55f * t,
             0.75f,
             1.0f - 0.35f * t,
-            1.0f
+            1.0f,
+            ZCSR_MOD_MULTIPLY,
+            0.0f
         };
     }
 }
