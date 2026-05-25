@@ -76,8 +76,17 @@ static void* zcsr_stbi_realloc_sized(void* ptr, size_t old_size, size_t new_size
 #define STBI_REALLOC(p, sz) zcsr_stbi_realloc_sized((p), 0, (sz))
 #define STBI_REALLOC_SIZED(p, oldsz, newsz) zcsr_stbi_realloc_sized((p), (oldsz), (newsz))
 #define STBI_FREE(p) zcsr_stbi_free(p)
+#define STB_IMAGE_STATIC
 #define STB_IMAGE_IMPLEMENTATION
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
 #include "../../third_party/stb_image.h"
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 
 static bool zcsr_copy_path(char* dst, const char* src) {
     size_t i = 0;
