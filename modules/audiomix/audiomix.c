@@ -27,6 +27,7 @@ typedef int (*zcsr_snd_pcm_set_params_fn)(snd_pcm_t*, int, int, unsigned int, un
 typedef snd_pcm_sframes_t (*zcsr_snd_pcm_writei_fn)(snd_pcm_t*, const void*, unsigned long);
 typedef int (*zcsr_snd_pcm_prepare_fn)(snd_pcm_t*);
 typedef int (*zcsr_snd_pcm_close_fn)(snd_pcm_t*);
+typedef void (*zcsr_snd_config_update_free_global_fn)(void);
 typedef union {
     void* obj;
     zcsr_snd_pcm_open_fn open_fn;
@@ -34,6 +35,7 @@ typedef union {
     zcsr_snd_pcm_writei_fn writei;
     zcsr_snd_pcm_prepare_fn prepare;
     zcsr_snd_pcm_close_fn close;
+    zcsr_snd_config_update_free_global_fn config_free_global;
 } zcsr_alsa_sym;
 #endif
 
@@ -327,8 +329,11 @@ static zcsr_alsa_sym zcsr_mix_alsa_sym(void* lib, const char* name) {
 }
 
 static void zcsr_mix_backend_close(zcsr_mix_backend* b) {
+    zcsr_snd_config_update_free_global_fn config_free_global;
     if (!b) return;
     if (b->opened && b->pcm && b->close) b->close(b->pcm);
+    config_free_global = b->lib ? zcsr_mix_alsa_sym(b->lib, "snd_config_update_free_global").config_free_global : 0;
+    if (config_free_global) config_free_global();
     if (b->lib) dlclose(b->lib);
     *b = (zcsr_mix_backend){ 0 };
 }
