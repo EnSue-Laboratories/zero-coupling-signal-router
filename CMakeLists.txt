@@ -39,6 +39,16 @@ zcsr_module(input)     # Game Core Agent 1 — input / window / 60FPS timer
 zcsr_module(audio)     # Game Core Agent 2 — WAV audio (signals only)
 zcsr_module(render)    # Game Core Agent 3 — PNG (stb_image) + batch sprite renderer
 zcsr_module(gamelogic) # Game Core Agent 4 — AABB collision + binary save/load
+
+# --- Engine extension (Game-Usable Core): additive, zero-coupling, optional next to the above ---
+zcsr_module(glrender)  # Engine-ext Agent 1 — OpenGL 3.3 renderer (vendors glad; coexists w/ software render)
+zcsr_module(audiomix)  # Engine-ext Agent 2 — multi-channel WAV mixer (coexists w/ single-stream audio)
+zcsr_module(inputext)  # Engine-ext Agent 3 — mouse + gamepad (additive to keyboard input)
+# Per-backend system libs are added by the implementer when each backend lands, e.g.:
+#   glrender: opengl32+gdi32 (Win) / GL+X11 (Linux, find_package(OpenGL)) / -framework OpenGL (mac)
+#   audiomix: (Win WASAPI: ole32) / ALSA (Linux: find_package(ALSA), asound) / -framework AudioToolbox,AudioUnit (mac)
+#   inputext: xinput (Win) / X11 (have) + evdev(none) (Linux) / -framework IOKit,GameController (mac)
+# Phase-0 stubs make no backend calls, so they link with no extra libs.
 if(NOT WIN32)
   find_package(Threads REQUIRED)
   target_link_libraries(zcsr_audio PUBLIC Threads::Threads)
