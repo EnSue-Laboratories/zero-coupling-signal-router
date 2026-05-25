@@ -21,7 +21,7 @@
  * Pixels live inside the caller-provided buffer (do NOT free). w==0 || h==0 || !rgba => invalid. */
 typedef struct {
     int            w, h;
-    const uint8_t* rgba; /* w*h*4 bytes, caller-buffer-owned */
+    uint8_t*       rgba; /* w*h*4 bytes, caller-buffer-owned */
 } zcsr_image;
 
 /* ---- Decode (multi-format) ---- */
