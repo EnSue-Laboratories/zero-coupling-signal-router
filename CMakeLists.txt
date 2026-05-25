@@ -162,6 +162,11 @@ target_link_libraries(zcsr_render_bench PRIVATE zcsr_render zcsr_platform)
 add_executable(zcsr_glrender_bench integration/bench_glrender.c)
 target_link_libraries(zcsr_glrender_bench PRIVATE zcsr_glrender zcsr_platform)
 
+# Offline image-bake throughput (chroma-key / variant / palette). Informational, not a ctest gate
+# (load-time bakes, not a per-frame budget); pure CPU, runs headless.
+add_executable(zcsr_image_bench integration/bench_image.c)
+target_link_libraries(zcsr_image_bench PRIVATE zcsr_image)
+
 # --- Zero-coupling guard: fail if a module includes another module ---
 add_custom_target(check_coupling
   COMMAND ${CMAKE_SOURCE_DIR}/tools/check_no_cross_includes.sh
