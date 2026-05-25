@@ -18,6 +18,27 @@ int main(void) {
         return 1;
     }
 
+    /* NULL-safety: the public API is called every frame from game loops — must no-op on a NULL
+     * renderer (and return invalid for value-returning calls), never deref. Runs headless. */
+    zcsr_gl_destroy(0);
+    zcsr_gl_set_vsync(0, true);
+    zcsr_gl_begin(0);
+    zcsr_gl_submit(0, 0);
+    zcsr_gl_submit_batch(0, 0, 0);
+    zcsr_gl_flush(0);
+    zcsr_gl_set_target(0, 0);
+    zcsr_gl_texture_filter(0, 0, true);
+    zcsr_gl_texture_destroy(0, 0);
+    zcsr_gl_draw_text(0, "x", 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+    if (zcsr_gl_texture_create(0, rgba, 2, 2) != 0) {
+        printf("FAIL: texture_create(NULL renderer) must return 0\n");
+        return 1;
+    }
+    if (zcsr_gl_texture_upload(0, 1, rgba, 2, 2)) {
+        printf("FAIL: texture_upload(NULL renderer) must return false\n");
+        return 1;
+    }
+
     zcsr_surface* surface = zcsr_surface_create("zcsr glrender smoke", (zcsr_rect){ 0, 0, 320, 240 });
     if (!surface) {
         printf("SKIP: no window surface (headless / no DISPLAY)\n");
