@@ -66,6 +66,8 @@ if(UNIX AND NOT APPLE)
   target_include_directories(zcsr_input PRIVATE ${X11_INCLUDE_DIR})
   target_link_libraries(zcsr_render PUBLIC ${X11_LIBRARIES})
   target_include_directories(zcsr_render PRIVATE ${X11_INCLUDE_DIR})
+  target_link_libraries(zcsr_inputext PUBLIC ${X11_LIBRARIES})
+  target_include_directories(zcsr_inputext PRIVATE ${X11_INCLUDE_DIR})
   find_package(OpenGL REQUIRED)
   target_sources(zcsr_glrender PRIVATE ${CMAKE_SOURCE_DIR}/third_party/glad/src/glad.c)
   target_include_directories(zcsr_glrender PRIVATE ${CMAKE_SOURCE_DIR}/third_party/glad/include)
@@ -141,6 +143,10 @@ add_test(NAME glrender COMMAND test_glrender)
 add_executable(test_audiomix tests/test_audiomix.c)
 target_link_libraries(test_audiomix PRIVATE zcsr_audiomix zcsr_signal)
 add_test(NAME audiomix COMMAND test_audiomix)
+
+add_executable(test_inputext tests/test_inputext.c)
+target_link_libraries(test_inputext PRIVATE zcsr_inputext zcsr_platform)
+add_test(NAME inputext COMMAND test_inputext)
 
 # Sprite-batch throughput gate (200 sprites < 1ms). Not a ctest: the flush blits onto a real
 # surface, so it must run on a GUI host (skips with exit 0 when headless).

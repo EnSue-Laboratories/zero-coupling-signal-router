@@ -23,6 +23,9 @@ Division: **Claude** = these Phase-0 contracts + Agent 5 validation + review. **
 - `stb_image.h` is vendored under `third_party/` and included **only** by `modules/render`
   (configured with `STBI_MALLOC` to allocate from the cache buffer, no global heap growth).
 - All cross-module communication is via contracts + signals; no module includes another module.
+- Later extension work may make small behavior-preserving fixes to this core when required for
+  coexistence with a new module. Such fixes must preserve the public contract, remain no-heap and
+  zero-coupled, and be reviewed explicitly.
 
 ## Bench / acceptance (Agent 5)
 - `200 sprites render < 1ms/frame` (gate); renderer should scale toward n*10000 sprites.

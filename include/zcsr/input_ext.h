@@ -37,6 +37,7 @@ typedef struct {
 typedef struct zcsr_input_ext zcsr_input_ext; /* opaque; mouse + gamepad state */
 
 zcsr_input_ext*  zcsr_input_ext_init(void* buffer, size_t bytes);     /* NULL if buffer too small */
+void             zcsr_input_ext_shutdown(zcsr_input_ext*);
 void             zcsr_input_ext_pump(zcsr_input_ext*, zcsr_surface*); /* call once per frame */
 zcsr_mouse_state zcsr_input_ext_mouse(const zcsr_input_ext*);
 zcsr_pad_state   zcsr_input_ext_pad(const zcsr_input_ext*, int index);/* index 0..ZCSR_PAD_MAX-1 */
