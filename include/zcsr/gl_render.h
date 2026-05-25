@@ -6,6 +6,7 @@
  * state lives in a caller buffer; GPU memory is the driver's. */
 #include "platform.h"  /* zcsr_surface */
 #include "sprite.h"    /* zcsr_rectf */
+#include "color.h"     /* zcsr_color_mode */
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -26,12 +27,20 @@ void              zcsr_gl_texture_filter(zcsr_gl_renderer*, zcsr_gl_texture, boo
 void              zcsr_gl_texture_destroy(zcsr_gl_renderer*, zcsr_gl_texture);
 
 /* One drawable sprite for the batch: GPU texture + dest rect (top-left origin) + rotation about
- * the rect center (radians) + color modulation (0..1). */
+ * the rect center (radians) + RGBA color modulation (0..1).
+ *
+ * `r,g,b,a` is the single RGBA modulation color (full RGBA only, no per-channel control). `mode`
+ * selects how it is applied (MULTIPLY/MIX/ADD); `amount` (0..1) is the blend strength for MIX/ADD.
+ * A zero-initialized sprite has mode = ZCSR_MOD_MULTIPLY and amount = 0, reproducing the legacy
+ * `texel * (r,g,b,a)` behavior exactly — existing callers are unaffected. MIX/ADD drive runtime
+ * effects like combat flash-red and freeze-blue (a multiply alone can only darken). */
 typedef struct {
     zcsr_gl_texture tex;
     zcsr_rectf      dst;
     float           rotation;
     float           r, g, b, a;
+    zcsr_color_mode mode;   /* default 0 = MULTIPLY (legacy) */
+    float           amount; /* blend strength 0..1 for MIX/ADD; ignored by MULTIPLY */
 } zcsr_gl_sprite;
 
 /* Batched draw. Target throughput: 200..10000 sprites within frame budget.

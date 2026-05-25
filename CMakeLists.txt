@@ -44,6 +44,7 @@ zcsr_module(gamelogic) # Game Core Agent 4 — AABB collision + binary save/load
 zcsr_module(glrender)  # Engine-ext Agent 1 — OpenGL 3.3 renderer (vendors glad; coexists w/ software render)
 zcsr_module(audiomix)  # Engine-ext Agent 2 — multi-channel WAV mixer (coexists w/ single-stream audio)
 zcsr_module(inputext)  # Engine-ext Agent 3 — mouse + gamepad (additive to keyboard input)
+zcsr_module(image)     # Engine-ext Agent — decode→RGBA32 + offline CPU processing (separated from rendering; vendors stb_image)
 # Per-backend system libs are added by the implementer when each backend lands, e.g.:
 #   glrender: opengl32+gdi32 (Win) / GL+X11 (Linux, find_package(OpenGL)) / -framework OpenGL (mac)
 #   audiomix: (Win WASAPI: ole32) / ALSA (Linux: find_package(ALSA), asound) / -framework AudioToolbox,AudioUnit (mac)
@@ -147,6 +148,10 @@ add_test(NAME audiomix COMMAND test_audiomix)
 add_executable(test_inputext tests/test_inputext.c)
 target_link_libraries(test_inputext PRIVATE zcsr_inputext zcsr_platform)
 add_test(NAME inputext COMMAND test_inputext)
+
+add_executable(test_image tests/test_image.c)
+target_link_libraries(test_image PRIVATE zcsr_image)
+add_test(NAME image COMMAND test_image)
 
 # Sprite-batch throughput gate (200 sprites < 1ms). Not a ctest: the flush blits onto a real
 # surface, so it must run on a GUI host (skips with exit 0 when headless).

@@ -30,6 +30,7 @@ to make `input` select events additively and drain only key/close events.
 | 1 | `modules/glrender` | `zcsr/gl_render.h` | GL 3.3 context on the surface; batch sprites (200–10000) w/ pos/rot/scale/tint/alpha; RGBA32 textures; nearest/linear filter; vsync; single FBO render-to-texture; built-in texture + solid shaders; minimal bitmap text. Vendors glad. |
 | 2 | `modules/audiomix` | `zcsr/audio_mix.h` | 16-channel mixer; dedicated audio thread + lock-free ring buffer; Win WASAPI / Linux ALSA / macOS AudioUnit; WAV 16-bit 44100 mono/stereo; linear resample only. Coexists with single-stream `audio.h`. |
 | 3 | `modules/inputext` | `zcsr/input_ext.h` | Mouse (move/3-button/wheel) + gamepad (≤2, Xbox layout); Win RawInput+XInput / Linux X11+evdev / macOS IOKit HID + GameController. Additive to keyboard `input.h`. |
+| 6 | `modules/image` | `zcsr/image.h` (+ `zcsr/color.h`) | Decode PNG/JPEG/BMP/TGA/GIF/PSD/PIC → RGBA32 + offline CPU processing (chroma-key transparency, RGBA variant recolor, 256-entry palette remap). SEPARATED from rendering: produces pixel buffers only; glrender/render consume the RGBA32. Vendors stb_image (used only here). No-heap: decodes/processes into a caller buffer. |
 | 4 | (discipline) | — | No-heap: each module sizes fixed pools to the 200–10000 ceiling (GL CPU staging, audio buffers, input queues); GPU memory left to driver. Threading per-subsystem (NO general pool): audio = 1 dedicated thread; GL = render thread (context is thread-affine); input = main-loop poll. Optional small worker pool only if async asset loading is later needed. |
 | 5 | tests/ + integration/ | — | ctest per module (logic) + benches (200–10000 sprite frame time; audio latency ≤25ms; input ≤1 frame). |
 
@@ -52,6 +53,17 @@ keeping the zero-coupling/no-heap model:
   as a normal static texture.
 - **Software path coexistence**: the existing software/overlay path remains available for UI and
   fallback; the GL renderer is optional and must not break it.
+
+These requirements are now contracted (Phase 0 = `image.h` / `color.h` + the `zcsr_gl_sprite`
+modulation fields; backends follow):
+
+- Multi-format decode + offline processing → `modules/image` / `zcsr/image.h`
+  (`zcsr_image_decode`, `zcsr_image_chroma_key`, `zcsr_image_make_variant`,
+  `zcsr_image_palette_remap`). Separated from rendering; emits RGBA32 that either render path uploads.
+- Runtime hardware modulation → additive fields on `zcsr_gl_sprite` (`zcsr/gl_render.h`): a single
+  RGBA color (no per-channel control) applied per `zcsr_color_mode` (`zcsr/color.h`) — `MULTIPLY`
+  (= legacy behavior, default), `MIX` (tint toward color, e.g. freeze-blue), `ADD` (additive, e.g.
+  flash-red), with an `amount` blend strength. A zero-initialized sprite is byte-identical to today.
 
 ## Zero-coupling & validation
 - Each module includes ONLY `zcsr/*` contracts (+ its vendored single-header dep). Enforced by
