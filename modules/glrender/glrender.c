@@ -25,6 +25,7 @@ typedef struct {
     float x, y;
     float u, v;
     float r, g, b, a;
+    float mode, amount;
 } zcsr_gl_vertex;
 
 typedef struct {
@@ -108,21 +109,30 @@ static unsigned int zcsr_gl_make_program(void) {
         "layout(location=0) in vec2 a_pos;\n"
         "layout(location=1) in vec2 a_uv;\n"
         "layout(location=2) in vec4 a_color;\n"
+        "layout(location=3) in vec2 a_mod;\n"
         "uniform vec2 u_view;\n"
         "out vec2 v_uv;\n"
         "out vec4 v_color;\n"
+        "out vec2 v_mod;\n"
         "void main(){\n"
         "  vec2 p = vec2((a_pos.x / u_view.x) * 2.0 - 1.0, 1.0 - (a_pos.y / u_view.y) * 2.0);\n"
         "  gl_Position = vec4(p, 0.0, 1.0);\n"
-        "  v_uv = a_uv; v_color = a_color;\n"
+        "  v_uv = a_uv; v_color = a_color; v_mod = a_mod;\n"
         "}\n";
     static const char* fs =
         "#version 330 core\n"
         "in vec2 v_uv;\n"
         "in vec4 v_color;\n"
+        "in vec2 v_mod;\n"
         "uniform sampler2D u_tex;\n"
         "out vec4 o_color;\n"
-        "void main(){ o_color = texture(u_tex, v_uv) * v_color; }\n";
+        "void main(){\n"
+        "  vec4 texel = texture(u_tex, v_uv);\n"
+        "  float amount = clamp(v_mod.y, 0.0, 1.0);\n"
+        "  if (v_mod.x < 0.5) o_color = texel * v_color;\n"
+        "  else if (v_mod.x < 1.5) o_color = mix(texel, v_color, amount);\n"
+        "  else o_color = clamp(texel + v_color * amount, 0.0, 1.0);\n"
+        "}\n";
     unsigned int v = zcsr_gl_compile(GL_VERTEX_SHADER, vs);
     unsigned int f = zcsr_gl_compile(GL_FRAGMENT_SHADER, fs);
     unsigned int p;
@@ -224,15 +234,17 @@ static zcsr_gl_tex_entry* zcsr_gl_free_tex(zcsr_gl_renderer* r) {
 }
 
 static void zcsr_gl_push_vertex(zcsr_gl_renderer* r, float x, float y, float u, float v,
-                                float cr, float cg, float cb, float ca) {
+                                float cr, float cg, float cb, float ca,
+                                zcsr_color_mode mode, float amount) {
     zcsr_gl_vertex* out;
     if (!r || r->vertex_count >= ZCSR_GL_MAX_VERTICES) return;
     out = &r->vertices[r->vertex_count++];
-    *out = (zcsr_gl_vertex){ x, y, u, v, cr, cg, cb, ca };
+    *out = (zcsr_gl_vertex){ x, y, u, v, cr, cg, cb, ca, (float)mode, amount };
 }
 
 static void zcsr_gl_push_quad(zcsr_gl_renderer* r, zcsr_rectf dst, float rot,
-                              float cr, float cg, float cb, float ca) {
+                              float cr, float cg, float cb, float ca,
+                              zcsr_color_mode mode, float amount) {
     float hw = dst.w * 0.5f;
     float hh = dst.h * 0.5f;
     float cx = dst.x + hw;
@@ -246,12 +258,12 @@ static void zcsr_gl_push_quad(zcsr_gl_renderer* r, zcsr_rectf dst, float rot,
         vx[i] = cx + px[i] * c - py[i] * s;
         vy[i] = cy + px[i] * s + py[i] * c;
     }
-    zcsr_gl_push_vertex(r, vx[0], vy[0], 0.0f, 0.0f, cr, cg, cb, ca);
-    zcsr_gl_push_vertex(r, vx[1], vy[1], 1.0f, 0.0f, cr, cg, cb, ca);
-    zcsr_gl_push_vertex(r, vx[2], vy[2], 1.0f, 1.0f, cr, cg, cb, ca);
-    zcsr_gl_push_vertex(r, vx[0], vy[0], 0.0f, 0.0f, cr, cg, cb, ca);
-    zcsr_gl_push_vertex(r, vx[2], vy[2], 1.0f, 1.0f, cr, cg, cb, ca);
-    zcsr_gl_push_vertex(r, vx[3], vy[3], 0.0f, 1.0f, cr, cg, cb, ca);
+    zcsr_gl_push_vertex(r, vx[0], vy[0], 0.0f, 0.0f, cr, cg, cb, ca, mode, amount);
+    zcsr_gl_push_vertex(r, vx[1], vy[1], 1.0f, 0.0f, cr, cg, cb, ca, mode, amount);
+    zcsr_gl_push_vertex(r, vx[2], vy[2], 1.0f, 1.0f, cr, cg, cb, ca, mode, amount);
+    zcsr_gl_push_vertex(r, vx[0], vy[0], 0.0f, 0.0f, cr, cg, cb, ca, mode, amount);
+    zcsr_gl_push_vertex(r, vx[2], vy[2], 1.0f, 1.0f, cr, cg, cb, ca, mode, amount);
+    zcsr_gl_push_vertex(r, vx[3], vy[3], 0.0f, 1.0f, cr, cg, cb, ca, mode, amount);
 }
 
 static void zcsr_gl_record_draw(zcsr_gl_renderer* r, unsigned int texture, size_t first, size_t count) {
@@ -321,6 +333,8 @@ zcsr_gl_renderer* zcsr_gl_create(zcsr_surface* surface, void* buffer, size_t byt
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(zcsr_gl_vertex), (void*)offsetof(zcsr_gl_vertex, u));
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(zcsr_gl_vertex), (void*)offsetof(zcsr_gl_vertex, r));
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(zcsr_gl_vertex), (void*)offsetof(zcsr_gl_vertex, mode));
     glGenFramebuffers(1, &r->fbo);
     r->white_tex = zcsr_gl_create_white_texture();
     glEnable(GL_BLEND);
@@ -441,7 +455,7 @@ void zcsr_gl_submit(zcsr_gl_renderer* r, const zcsr_gl_sprite* s) {
     if (!r || !s || s->tex == 0 || !zcsr_gl_find_tex(r, s->tex)) return;
     if (r->vertex_count + 6u > ZCSR_GL_MAX_VERTICES) return;
     first = r->vertex_count;
-    zcsr_gl_push_quad(r, s->dst, s->rotation, s->r, s->g, s->b, s->a);
+    zcsr_gl_push_quad(r, s->dst, s->rotation, s->r, s->g, s->b, s->a, s->mode, s->amount);
     zcsr_gl_record_draw(r, s->tex, first, r->vertex_count - first);
 #else
     (void)r; (void)s;
@@ -526,7 +540,8 @@ void zcsr_gl_draw_text(zcsr_gl_renderer* r, const char* utf8, float x, float y, 
         /* Minimal block glyph: enough for scores/debug labels without external font data. */
         if (r->vertex_count + 6u <= ZCSR_GL_MAX_VERTICES) {
             size_t first = r->vertex_count;
-            zcsr_gl_push_quad(r, (zcsr_rectf){ pen, y, 5.0f * scale, 7.0f * scale }, 0.0f, cr, cg, cb, ca);
+            zcsr_gl_push_quad(r, (zcsr_rectf){ pen, y, 5.0f * scale, 7.0f * scale }, 0.0f, cr, cg, cb, ca,
+                              ZCSR_MOD_MULTIPLY, 0.0f);
             zcsr_gl_record_draw(r, r->white_tex, first, r->vertex_count - first);
         }
         pen += 6.0f * scale;
