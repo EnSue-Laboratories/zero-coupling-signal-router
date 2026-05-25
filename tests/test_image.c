@@ -80,10 +80,73 @@ static void test_processing(void) {
     }
 }
 
+/* Variant: MULTIPLY darkens by the color, ADD lightens and clamps (the modes a pure multiply
+ * can't express — they back flash-red / freeze-blue). */
+static void test_variant_modes(void) {
+    unsigned char src[8] = { 100, 100, 100, 200,   50, 60, 70, 255 };
+    unsigned char buf[8];
+    zcsr_image img = { 2, 1, src };
+
+    zcsr_image mul = zcsr_image_make_variant(&img, buf, sizeof buf,
+                                             ZCSR_MOD_MULTIPLY, 128, 255, 0, 255, 0);
+    CK("multiply valid", mul.rgba == buf && mul.w == 2 && mul.h == 1);
+    if (mul.rgba) {
+        CK("multiply r darkened", buf[0] > 40 && buf[0] < 100); /* 100*128/255 ~= 50 */
+        CK("multiply g kept", buf[1] == 100);                   /* *255 ~= unchanged */
+        CK("multiply b zeroed", buf[2] == 0);                   /* *0 */
+    }
+
+    zcsr_image add = zcsr_image_make_variant(&img, buf, sizeof buf,
+                                             ZCSR_MOD_ADD, 255, 0, 0, 0, 255);
+    CK("add valid", add.rgba == buf);
+    if (add.rgba) {
+        CK("add r clamps to 255", buf[0] == 255);
+        CK("add g unchanged", buf[1] == 100);
+    }
+}
+
+/* Undersized destination / decode buffers must fail closed (return invalid), never overrun. */
+static void test_bounds(void) {
+    unsigned char src[16] = { 0 };
+    unsigned char small[8];               /* a 2x2 needs 16 bytes */
+    static const uint8_t lut[256][4] = { { 0 } };
+    zcsr_image img = { 2, 2, src };
+
+    CK("variant undersized dst invalid",
+       zcsr_image_make_variant(&img, small, sizeof small, ZCSR_MOD_MIX, 0, 0, 0, 0, 128).rgba == 0);
+    CK("palette undersized dst invalid",
+       zcsr_image_palette_remap(&img, lut, small, sizeof small).rgba == 0);
+    CK("decode undersized buffer invalid",
+       zcsr_image_decode(PNG_2x2, sizeof PNG_2x2, small, sizeof small).w == 0);
+}
+
+/* Chroma-key alpha must be monotonically non-decreasing as a pixel's distance from the key grows
+ * (closer to the key = more transparent); keyed pixel fully transparent, far pixel fully opaque. */
+static void test_chroma_monotonic(void) {
+    unsigned char px[16 * 4];
+    zcsr_image img = { 16, 1, px };
+    int mono = 1;
+    int i;
+    for (i = 0; i < 16; ++i) {
+        px[i * 4 + 0] = (unsigned char)(i * 16); /* distance from key red(0) = i*16 */
+        px[i * 4 + 1] = 255;
+        px[i * 4 + 2] = 0;
+        px[i * 4 + 3] = 255;
+    }
+    CK("chroma sweep ok", zcsr_image_chroma_key(&img, 0, 255, 0, 0, 200));
+    for (i = 1; i < 16; ++i) if (px[i * 4 + 3] < px[(i - 1) * 4 + 3]) mono = 0;
+    CK("chroma alpha monotonic in distance", mono);
+    CK("chroma key pixel transparent", px[3] == 0);
+    CK("chroma far pixel opaque", px[15 * 4 + 3] == 255);
+}
+
 int main(void) {
     test_guards();
     test_decode();
     test_processing();
+    test_variant_modes();
+    test_bounds();
+    test_chroma_monotonic();
     if (!fails) printf("PASS: image decode + processing\n");
     return fails ? 1 : 0;
 }
