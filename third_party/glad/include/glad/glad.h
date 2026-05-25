@@ -1,0 +1,87 @@
+#ifndef ZCSR_THIRD_PARTY_GLAD_H
+#define ZCSR_THIRD_PARTY_GLAD_H
+/* Minimal vendored OpenGL loader surface for zcsr glrender.
+ * Generated-style single header/source boundary: modules outside glrender must not include this.
+ */
+#include <GL/gl.h>
+#include <GL/glext.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef void (*GLADgenericproc)(void);
+typedef GLADgenericproc (*GLADloadproc)(const char* name);
+int gladLoadGLLoader(GLADloadproc load);
+
+extern PFNGLGENVERTEXARRAYSPROC glad_glGenVertexArrays;
+extern PFNGLBINDVERTEXARRAYPROC glad_glBindVertexArray;
+extern PFNGLDELETEVERTEXARRAYSPROC glad_glDeleteVertexArrays;
+extern PFNGLGENBUFFERSPROC glad_glGenBuffers;
+extern PFNGLBINDBUFFERPROC glad_glBindBuffer;
+extern PFNGLBUFFERDATAPROC glad_glBufferData;
+extern PFNGLBUFFERSUBDATAPROC glad_glBufferSubData;
+extern PFNGLDELETEBUFFERSPROC glad_glDeleteBuffers;
+extern PFNGLCREATESHADERPROC glad_glCreateShader;
+extern PFNGLSHADERSOURCEPROC glad_glShaderSource;
+extern PFNGLCOMPILESHADERPROC glad_glCompileShader;
+extern PFNGLGETSHADERIVPROC glad_glGetShaderiv;
+extern PFNGLGETSHADERINFOLOGPROC glad_glGetShaderInfoLog;
+extern PFNGLDELETESHADERPROC glad_glDeleteShader;
+extern PFNGLCREATEPROGRAMPROC glad_glCreateProgram;
+extern PFNGLATTACHSHADERPROC glad_glAttachShader;
+extern PFNGLLINKPROGRAMPROC glad_glLinkProgram;
+extern PFNGLGETPROGRAMIVPROC glad_glGetProgramiv;
+extern PFNGLGETPROGRAMINFOLOGPROC glad_glGetProgramInfoLog;
+extern PFNGLDELETEPROGRAMPROC glad_glDeleteProgram;
+extern PFNGLUSEPROGRAMPROC glad_glUseProgram;
+extern PFNGLGETUNIFORMLOCATIONPROC glad_glGetUniformLocation;
+extern PFNGLUNIFORM1IPROC glad_glUniform1i;
+extern PFNGLUNIFORM2FPROC glad_glUniform2f;
+extern PFNGLENABLEVERTEXATTRIBARRAYPROC glad_glEnableVertexAttribArray;
+extern PFNGLVERTEXATTRIBPOINTERPROC glad_glVertexAttribPointer;
+extern PFNGLACTIVETEXTUREPROC glad_glActiveTexture;
+extern PFNGLGENFRAMEBUFFERSPROC glad_glGenFramebuffers;
+extern PFNGLBINDFRAMEBUFFERPROC glad_glBindFramebuffer;
+extern PFNGLFRAMEBUFFERTEXTURE2DPROC glad_glFramebufferTexture2D;
+extern PFNGLCHECKFRAMEBUFFERSTATUSPROC glad_glCheckFramebufferStatus;
+extern PFNGLDELETEFRAMEBUFFERSPROC glad_glDeleteFramebuffers;
+
+#define glGenVertexArrays glad_glGenVertexArrays
+#define glBindVertexArray glad_glBindVertexArray
+#define glDeleteVertexArrays glad_glDeleteVertexArrays
+#define glGenBuffers glad_glGenBuffers
+#define glBindBuffer glad_glBindBuffer
+#define glBufferData glad_glBufferData
+#define glBufferSubData glad_glBufferSubData
+#define glDeleteBuffers glad_glDeleteBuffers
+#define glCreateShader glad_glCreateShader
+#define glShaderSource glad_glShaderSource
+#define glCompileShader glad_glCompileShader
+#define glGetShaderiv glad_glGetShaderiv
+#define glGetShaderInfoLog glad_glGetShaderInfoLog
+#define glDeleteShader glad_glDeleteShader
+#define glCreateProgram glad_glCreateProgram
+#define glAttachShader glad_glAttachShader
+#define glLinkProgram glad_glLinkProgram
+#define glGetProgramiv glad_glGetProgramiv
+#define glGetProgramInfoLog glad_glGetProgramInfoLog
+#define glDeleteProgram glad_glDeleteProgram
+#define glUseProgram glad_glUseProgram
+#define glGetUniformLocation glad_glGetUniformLocation
+#define glUniform1i glad_glUniform1i
+#define glUniform2f glad_glUniform2f
+#define glEnableVertexAttribArray glad_glEnableVertexAttribArray
+#define glVertexAttribPointer glad_glVertexAttribPointer
+#define glActiveTexture glad_glActiveTexture
+#define glGenFramebuffers glad_glGenFramebuffers
+#define glBindFramebuffer glad_glBindFramebuffer
+#define glFramebufferTexture2D glad_glFramebufferTexture2D
+#define glCheckFramebufferStatus glad_glCheckFramebufferStatus
+#define glDeleteFramebuffers glad_glDeleteFramebuffers
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* ZCSR_THIRD_PARTY_GLAD_H */

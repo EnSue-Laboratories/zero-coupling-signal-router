@@ -65,6 +65,11 @@ if(UNIX AND NOT APPLE)
   target_include_directories(zcsr_input PRIVATE ${X11_INCLUDE_DIR})
   target_link_libraries(zcsr_render PUBLIC ${X11_LIBRARIES})
   target_include_directories(zcsr_render PRIVATE ${X11_INCLUDE_DIR})
+  find_package(OpenGL REQUIRED)
+  target_sources(zcsr_glrender PRIVATE ${CMAKE_SOURCE_DIR}/third_party/glad/src/glad.c)
+  target_include_directories(zcsr_glrender PRIVATE ${CMAKE_SOURCE_DIR}/third_party/glad/include)
+  target_link_libraries(zcsr_glrender PUBLIC ${X11_LIBRARIES} OpenGL::GL m)
+  target_include_directories(zcsr_glrender PRIVATE ${X11_INCLUDE_DIR})
 endif()
 
 if(APPLE)
@@ -128,10 +133,18 @@ add_executable(test_audio tests/test_audio.c)
 target_link_libraries(test_audio PRIVATE zcsr_audio zcsr_signal)
 add_test(NAME audio COMMAND test_audio)
 
+add_executable(test_glrender tests/test_glrender.c)
+target_link_libraries(test_glrender PRIVATE zcsr_glrender zcsr_platform)
+add_test(NAME glrender COMMAND test_glrender)
+
 # Sprite-batch throughput gate (200 sprites < 1ms). Not a ctest: the flush blits onto a real
 # surface, so it must run on a GUI host (skips with exit 0 when headless).
 add_executable(zcsr_render_bench integration/bench_render.c)
 target_link_libraries(zcsr_render_bench PRIVATE zcsr_render zcsr_platform)
+
+# GPU sprite throughput gate (200..10000 sprites). Not a ctest: requires a GL-capable display.
+add_executable(zcsr_glrender_bench integration/bench_glrender.c)
+target_link_libraries(zcsr_glrender_bench PRIVATE zcsr_glrender zcsr_platform)
 
 # --- Zero-coupling guard: fail if a module includes another module ---
 add_custom_target(check_coupling
