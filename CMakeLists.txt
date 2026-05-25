@@ -52,6 +52,7 @@ zcsr_module(inputext)  # Engine-ext Agent 3 — mouse + gamepad (additive to key
 if(NOT WIN32)
   find_package(Threads REQUIRED)
   target_link_libraries(zcsr_audio PUBLIC Threads::Threads)
+  target_link_libraries(zcsr_audiomix PUBLIC Threads::Threads ${CMAKE_DL_LIBS})
 else()
   target_link_libraries(zcsr_audio PUBLIC winmm)
 endif()
@@ -136,6 +137,10 @@ add_test(NAME audio COMMAND test_audio)
 add_executable(test_glrender tests/test_glrender.c)
 target_link_libraries(test_glrender PRIVATE zcsr_glrender zcsr_platform)
 add_test(NAME glrender COMMAND test_glrender)
+
+add_executable(test_audiomix tests/test_audiomix.c)
+target_link_libraries(test_audiomix PRIVATE zcsr_audiomix zcsr_signal)
+add_test(NAME audiomix COMMAND test_audiomix)
 
 # Sprite-batch throughput gate (200 sprites < 1ms). Not a ctest: the flush blits onto a real
 # surface, so it must run on a GUI host (skips with exit 0 when headless).
