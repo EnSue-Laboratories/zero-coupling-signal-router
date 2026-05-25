@@ -21,6 +21,7 @@ void              zcsr_gl_set_vsync(zcsr_gl_renderer*, bool on);
 
 /* Upload 8-bit RGBA pixels to a GPU texture. `linear` = linear filter (else nearest). */
 zcsr_gl_texture   zcsr_gl_texture_create(zcsr_gl_renderer*, const uint8_t* rgba, int w, int h);
+bool              zcsr_gl_texture_upload(zcsr_gl_renderer*, zcsr_gl_texture, const uint8_t* rgba, int w, int h);
 void              zcsr_gl_texture_filter(zcsr_gl_renderer*, zcsr_gl_texture, bool linear);
 void              zcsr_gl_texture_destroy(zcsr_gl_renderer*, zcsr_gl_texture);
 
