@@ -5,6 +5,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#if defined(__APPLE__)
+#include "overlay_cocoa.h" /* same-module C-ABI shim over the Cocoa draw backend */
+#endif
+
 enum { ZCSR_OVERLAY_POOL = 4, ZCSR_OVERLAY_TEXT_MAX = 255, ZCSR_OVERLAY_BUTTON_MAX = 3 };
 
 struct zcsr_overlay {
@@ -193,6 +197,9 @@ void zcsr_overlay_render(zcsr_overlay* o) {
     zcsr_overlay_draw_x11(o, (Display*)display, (Window)(uintptr_t)handle);
 #elif defined(_WIN32)
     zcsr_overlay_draw_win32(o, (HWND)handle);
+#elif defined(__APPLE__)
+    zcsr_cocoa_overlay_draw(handle, o->text, o->bitmap, o->bitmap_w, o->bitmap_h,
+                            o->buttons, o->button_count, o->hover_index);
 #else
     (void)handle;
 #endif

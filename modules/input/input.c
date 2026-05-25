@@ -164,6 +164,7 @@ static void zcsr_input_platform_pump(zcsr_input* input, zcsr_surface* window) {
 
 #elif defined(__APPLE__)
 #include <mach/mach_time.h>
+#include "input_cocoa.h" /* same-module C-ABI shim over Cocoa NSEvent key pumping */
 
 uint64_t zcsr_clock_now_ns(void) {
     static mach_timebase_info_data_t timebase;
@@ -173,14 +174,26 @@ uint64_t zcsr_clock_now_ns(void) {
     return (now * (uint64_t)timebase.numer) / (uint64_t)timebase.denom;
 }
 
+/* Trampoline so the Objective-C shim can feed key events into the module-private queue. */
+static void zcsr_input_key_trampoline(void* ctx, uint16_t keycode, int is_down) {
+    zcsr_input* input = (zcsr_input*)ctx;
+    zcsr_input_record_key(input, (zcsr_keycode)keycode, is_down ? ZCSR_KEY_DOWN : ZCSR_KEY_UP);
+}
+
 static void zcsr_input_platform_init(zcsr_input* input, zcsr_surface* window) {
     (void)input;
     (void)window;
 }
 
 static void zcsr_input_platform_pump(zcsr_input* input, zcsr_surface* window) {
-    (void)input;
-    (void)window;
+    void* ns_window = zcsr_surface_native_handle(window);
+    int closed = 0;
+    if (!input || !ns_window) return;
+    zcsr_cocoa_input_pump(ns_window, zcsr_input_key_trampoline, input, &closed);
+    if (closed) {
+        input->close_requested = true;
+        zcsr_record_close(window);
+    }
 }
 
 #else
