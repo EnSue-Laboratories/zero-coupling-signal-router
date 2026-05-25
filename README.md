@@ -1,11 +1,12 @@
 # Zero-Coupling UI Signal Router
 
-Pure data + signals. **No game logic.** A minimal, dependency-free UI signal router whose
-modules are fully decoupled: each compiles independently and talks only through a frozen
-interface contract — never by including another module.
+Pure data + signals. A minimal, dependency-light zero-coupling UI/game-core foundation whose
+modules compile independently and talk only through shared interface contracts — never by
+including another module.
 
-> Status: **Phase 0 — interface contracts + buildable skeleton.** Modules are stubs with
-> per-agent `TODO`s. Language: **C11/C17** (no heap, no STL, zero external dependencies).
+> Status: signal router + overlay + classic 2D game core are implemented; the game-usable engine
+> extension is landing additively (OpenGL renderer, audio mixer, universal input). Language:
+> **C11/C17** (no runtime heap, no STL; vendored single-file dependencies only where documented).
 
 ## Why this layout enables zero-coupling
 The apparent conflict — *"no cross-module includes"* vs *"all modules compile independently"* —
@@ -16,6 +17,12 @@ Integration calls those functions, so it depends on **interfaces, not implementa
 guard `tools/check_no_cross_includes.sh` fails the build if any module includes another module
 or a relative path.
 
+When a later feature exposes an integration bug inside an earlier module, the repo treats the
+feature contract (`.h`) and its implementation (`.c` / same-module native shim) as one cohesive
+unit. Small behavior-preserving fixes to an earlier module are allowed when required to complete
+the same functional requirement, provided the public contract and accepted behavior are preserved
+and the change is reviewed explicitly.
+
 ## Modules ↔ Agents
 | Agent | Module            | Owns                                                            |
 |-------|-------------------|-----------------------------------------------------------------|
@@ -25,6 +32,10 @@ or a relative path.
 | 4     | `modules/overlay` | native overlay: text + 1 bitmap + 3 buttons; <1ms/frame         |
 | 5     | `modules/platform`| Win32 / X11 / Cocoa, auto-selected at compile time; no GL/DX/Vulkan |
 | 6     | `integration/`    | wiring, demo, benchmark, validation (architecture/review owned) |
+
+Additional game-core modules live under `modules/input`, `modules/audio`, `modules/render`,
+`modules/gamelogic`, `modules/glrender`, `modules/audiomix`, and `modules/inputext`; see
+`docs/GAME_CORE.md` and `docs/ENGINE_EXTENSION.md`.
 
 ## Build
 ```sh
